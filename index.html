@@ -132,13 +132,13 @@
   <button onclick="checkGuess(document.getElementById('guessInput').value)">Guess</button>
 
   <script>
+  import React, { useState, useEffect } from 'react';
+  import ReactDOM from 'react-dom/client';
+  import React from 'https://unpkg.com/react@18/umd/react.development.js';
+  import ReactDOM from 'https://unpkg.com/react-dom@18/umd/react-dom.development.js';
 
-
-   // import React, { useState, useEffect } from 'react';
-    //import ReactDOM from 'react-dom/client';
-   // import React from 'https://unpkg.com/react@18/umd/react.development.js';
-    //import ReactDOM from 'https://unpkg.com/react-dom@18/umd/react-dom.development.js';
-    //The Wordle board (6 words of 5 letters each)
+    
+  //The Wordle board (6 words of 5 letters each)
     var board = React.createElement('div', { className: 'board' },
       Array.from({ length: 6 }, (_, rowIndex) =>
         React.createElement('div', { key: rowIndex, className: 'row' },
