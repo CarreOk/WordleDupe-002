@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wordle Demo</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <style>
+    body {
+      /* dark background so the grid shows nicely */
+      background-color: #100215b7;
+      background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+      background-size: 10px 10px;
+      /* size of the dot matrix */
+      color: #f8f8f8;
+      /* default text color on dark bg */
+      font-family: sans-serif;
+    }
+
+    /* make letter boxes circular */
+    #used-letters span {
+      display: inline-flex;
+      /* center text inside circle */
+      align-items: center;
+      justify-content: center;
+
+      width: 32px;
+      /* same width and height -> circle */
+      height: 32px;
+      margin: 4px;
+      font-weight: bold;
+
+      border-radius: 50%;
+      /* key line: makes it a circle */
+
+      /* base styling – you can override with your status classes */
+      background-color: #333;
+      color: #ffffff;
+    }
+
+    /* Correct letters (was green) -> lavender */
+    .correct-letter {
+      background-color: #e6e6fa;
+      /* lavender */
+      color: #2b2b2b;
+      /* dark text for contrast */
+    }
+
+    /* Present letters (yellow) stays yellow */
+    .present-letter {
+      background-color: #ffd700;
+      /* gold/yellow */
+      color: #000000;
+      /* black text for contrast */
+    }
+
+    /* Absent letters (was grey) -> fuchsia */
+    .absent-letter {
+      background-color: #ff00ff;
+      /* fuchsia */
+      color: #ffffff;
+      /* white text for contrast */
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      /* 5 columns for 5 letters */
+      gap: 8px;
+      /* space between boxes */
+      justify-items: center;
+      /* center boxes horizontally */
+      margin-top: 20px;
+    }
+
+    .myapp {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stats {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+
+    .box {
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      border-radius: 8px;
+    }
+
+    .correct {
+      background-color: #e6e6fa;
+      /* lavender */
+      color: #2b2b2b;
+      /* dark text for contrast */
+    }
+
+    .present {
+      background-color: #ffd700;
+      /* gold/yellow */
+      color: #000000;
+      /* black text for contrast */
+    }
+
+    .absent {
+      background-color: #ff00ff;
+      /* fuchsia */
+      color: #ffffff;
+      /* white text for contrast */
+    }
+  </style>
+</head>
+
+<body>
+  <div id="used-letters"></div>
+  <div id="myapp">
+
+
+  </div>
+
+  <input type="text" id="guessInput" maxlength="5">
+  <button onclick="checkGuess(document.getElementById('guessInput').value)">Guess</button>
+
+  <script>
+
+
+    import React, { useState, useEffect } from 'react';
+    import ReactDOM from 'react-dom/client';
+    import React from 'https://unpkg.com/react@18/umd/react.development.js';
+    import ReactDOM from 'https://unpkg.com/react-dom@18/umd/react-dom.development.js';
+    //The Wordle board (6 words of 5 letters each)
+    var board = reactCreateEllement('div', { className: 'board' },
+      Array.from({ length: 6 }, (_, rowIndex) =>
+        reactCreateElement('div', { key: rowIndex, className: 'row' },
+          Array.from({ length: 5 }, (_, colIndex) =>
+            reactCreateElement('div', { key: colIndex, className: 'box' })
+          )
+        )
+      )
+    );
+
+    //The used key board
+    var usedLetters = reactCreateElement('div', { id: 'used-letters' });
+
+    //hard code 3 guesses (“might”, “flood”, “stray”) 
+    const gesses = ["Might", "Flood", "Stray"];
+    const answer = "Moody";
+    //  calculate and display results against an answer of “moody”
+    function calculateResults(gesses, answer) {
+      const result = [];
+      for (let i = 0; i < gesses.length; i++) {
+        if (gesses[i].toUpperCase() === answer[i].toUpperCase()) {
+          result.push('Correct');
+        } else if (answer.toUpperCase().includes(gesses[i].toUpperCase())) {
+          result.push('Default');
+        } else {
+          result.push('Nothing Yet?');
+        }
+      }
+      return result;
+    }
+    function displayResults(gesses, result) {
+      const row = document.querySelector(`.board .row:nth-child(${gesses.indexOf(gesses) + 1})`);
+      if (row) {
+        const box = row.querySelectorAll('.box');
+        box.forEach((box, index) => {
+          box.textContent = gesses[index].toUpperCase();
+          box.className = `box ${result[index]}`;
+        });
+      }
+    }
+    gesses.forEach(gesses => {
+      const result = calculateResults(gesses, answer);
+      displayResults(gesses, result);
+    });
+
+    // 6 guesses and a 5 letter word to guess.
+    let Words = 'APPLE'; // default word, will be replaced by API
+
+    // API for Wordle
+    // API’s must return JSON and must be accessed using XMLHttpRequest or a promise / fetch.
+    async function getWordleInfo() {
+      try {
+        const response = await fetch('https://api.wordle.dev/wordle');
+        const info = await response.json();
+        console.log(info);
+        // Use the word from the API
+        Words = info.word.toUpperCase();
+      } catch (error) {
+        console.error('Error fetching Wordle data:', error);
+      }
+    }
+
+    getWordleInfo();
+
+    // Used letter board to show the letters that have been used in the game.
+    let usedLetters = [];
+
+    function addUsedLetter(letter) {
+      if (!usedLetters.includes(letter)) {
+        usedLetters.push(letter);
+        updateUsedLettersDisplay();
+      }
+    }
+
+    function LettersDisplay() {
+      const usedLettersContainer = document.getElementById('used-letters');
+      usedLettersContainer.innerHTML = '';
+      usedLetters.forEach(letter => {
+        const letterElement = document.createElement('span');
+        letterElement.textContent = letter;
+        usedLettersContainer.appendChild(letterElement);
+      });
+    }
+
+    function updatedDisplay() {
+      LettersDisplay();
+    }
+
+    function updateUsedLettersDisplay() {
+      LettersDisplay();
+    }
+
+    let attempts = 0;
+
+    // Track statistics of wins and losses- and how many guesses a win needed.
+    let wins = 0;
+    let losses = 0;
+    let guessCounts = [];
+
+    function stats(isWin, guessCount) {
+      if (isWin) {
+        wins++;
+        guessCounts.push(guessCount);
+      } else {
+        losses++;
+      }
+
+      let avgGuesses = 0;
+      if (guessCounts.length > 0) {
+        avgGuesses = guessCounts.reduce((a, b) => a + b, 0) / guessCounts.length;
+      }
+
+      console.log(
+        'Wins: ' + wins +
+        ', Losses: ' + losses +
+        ', Average Guesses to Win: ' + avgGuesses.toFixed(2)
+      );
+    }
+
+    // if the letter is not in the answer (grey)
+    function Grey(guess) {
+      for (let i = 0; i < guess.length; i++) {
+        if (!Words.includes(guess[i].toUpperCase())) {
+          addUsedLetter(guess[i].toUpperCase());
+        }
+      }
+      updatedDisplay();
+    }
+
+    // if the letter is in the answer but in a different place than in your guess word (yellow)
+    function Yellow(guess) {
+      let hasYellow = false;
+      for (let i = 0; i < guess.length; i++) {
+        if (Words.includes(guess[i].toUpperCase()) && Words[i] !== guess[i].toUpperCase()) {
+          console.log('Letter ' + guess[i].toUpperCase() + ' is in the word but in a different position.');
+          hasYellow = true;
+        }
+      }
+      return hasYellow; // so the later logic "if (Yellow(guess))" works
+    }
+
+    // if the letter is in the answer and in the same place as in your guess word (green)
+    function Green(guess) {
+      for (let i = 0; i < guess.length; i++) {
+        if (Words[i] === guess[i].toUpperCase()) {
+          console.log('Letter ' + guess[i].toUpperCase() + ' is in the word and in the correct position!');
+        }
+      }
+    }
+
+    // Include a “debug” mode that displays the answer in the console
+    function debugMode() {
+      console.log('Debug Mode: The correct word is ' + Words);
+    }
+
+    // Allows the user to play multiple games – i.e., you need to handle restarting the game.
+    function restartGame() {
+      attempts = 0;
+      usedLetters = [];
+      updateUsedLettersDisplay();
+      // If you later randomize Words, you can reset it here too
+      debugMode();
+    }
+
+    // Responsive to tablet size (down to 700px)
+    function checkScreenSize() {
+      if (window.innerWidth <= 700) {
+        console.log('Screen size is 700px or smaller. Adjusting layout for tablet view.');
+        // Implement layout adjustments for tablet view here
+      } else {
+        console.log('Screen size is larger than 700px. Using standard layout.');
+        // Implement layout adjustments for larger screens here
+      }
+    }
+
+    window.addEventListener('resize', checkScreenSize);
+    checkScreenSize(); // Initial check on page load
+
+    // Main game logic
+    function makeGuess(guess) {
+      if (!guess) {
+        console.log('Please enter a guess.');
+        return;
+      }
+
+      if (guess.length !== 5) {
+        console.log('Please enter a 5-letter word.');
+        return;
+      }
+
+      guess = guess.toUpperCase();
+      attempts++;
+
+      if (guess === Words) {
+        console.log('Congratulations! You guessed the word!');
+        Green(guess);
+        Yellow(guess); // still called to respect your original structure
+        Grey(guess);
+        stats(true, attempts);
+        console.log('Game over! The correct word was: ' + Words);
+        return;
+      }
+
+      if (attempts >= 6) {
+        console.log('Game over! The correct word was: ' + Words);
+        Grey(guess);
+        Yellow(guess);
+        Green(guess);
+        stats(false, attempts);
+        return;
+      }
+
+      console.log('Incorrect guess. Try again!');
+      // Apply color logic each guess
+      Green(guess);
+      const hasYellow = Yellow(guess);
+      Grey(guess);
+
+      // If a letter appears twice in the guess but only once in the answer,
+      // you must eliminate all possible yellow/green responses and then consider any repeat letters.
+      if (hasYellow) {
+        let letterCount = {};
+        for (let i = 0; i < guess.length; i++) {
+          const letter = guess[i].toUpperCase();
+          if (Words.includes(letter)) {
+            if (!letterCount[letter]) {
+              letterCount[letter] = 0;
+            }
+            letterCount[letter]++;
+          }
+        }
+
+        // Logic to eliminate yellow/green responses for this letter
+        for (let letter in letterCount) {
+          if (letterCount[letter] > 1) {
+            console.log(
+              'Letter ' + letter +
+              ' appears multiple times in the guess but only once in the answer. ' +
+              'Eliminating yellow/green responses for this letter.'
+            );
+          }
+        }
+      }
+
+      // The game ends when the user guesses the word or uses all 6 guesses.
+      if (attempts >= 6 || guess === Words) {
+        console.log('Game over! The correct word was: ' + Words);
+      }
+    }
+
+    // Helper so your HTML onclick works as written in your original code
+    function checkGuess(value) {
+      makeGuess(value);
+      document.getElementById('guessInput').value = '';
+    }
+
+    // Start in debug mode so you can see the answer
+    debugMode();
+  </script>
+</body>
+
+</html>
